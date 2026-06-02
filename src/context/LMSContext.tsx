@@ -1,6 +1,8 @@
 import { ReactNode, createContext, useContext, useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+import { notificationService } from "@/services/notificationService";
+
 interface LMSContextType {
   bookmarks: string[];
   enrollments: string[];
@@ -50,31 +52,48 @@ export const LMSProvider = ({ children }: { children: ReactNode }) => {
 
   const toggleBookmark = async (courseId: string) => {
     try {
-      const updatedBookmarks = bookmarks.includes(courseId)
-        ? bookmarks.filter((id) => id !== courseId)
-        : [...bookmarks, courseId];
+      setBookmarks((currentBookmarks) => {
+        const isBookmarking = !currentBookmarks.includes(courseId);
+        const updatedBookmarks = isBookmarking
+          ? [...currentBookmarks, courseId]
+          : currentBookmarks.filter((id) => id !== courseId);
 
-      setBookmarks(updatedBookmarks);
-      await AsyncStorage.setItem(
-        STORAGE_KEYS.BOOKMARKS,
-        JSON.stringify(updatedBookmarks)
-      );
+        // Async save to storage
+        AsyncStorage.setItem(
+          STORAGE_KEYS.BOOKMARKS,
+          JSON.stringify(updatedBookmarks)
+        ).catch((err) => console.error("Failed to save bookmarks to storage", err));
+
+        // Trigger local milestone notification when bookmark count reaches exactly 5
+        if (isBookmarking && updatedBookmarks.length === 5) {
+          notificationService.showMilestoneNotification().catch((err) =>
+            console.error("Failed to trigger milestone notification", err)
+          );
+        }
+
+        return updatedBookmarks;
+      });
     } catch (error) {
-      console.error("Failed to save bookmarks to storage", error);
+      console.error("Failed to toggle bookmark", error);
     }
   };
 
   const enrollInCourse = async (courseId: string) => {
-    if (enrollments.includes(courseId)) return;
     try {
-      const updatedEnrollments = [...enrollments, courseId];
-      setEnrollments(updatedEnrollments);
-      await AsyncStorage.setItem(
-        STORAGE_KEYS.ENROLLMENTS,
-        JSON.stringify(updatedEnrollments)
-      );
+      setEnrollments((currentEnrollments) => {
+        if (currentEnrollments.includes(courseId)) return currentEnrollments;
+        const updatedEnrollments = [...currentEnrollments, courseId];
+
+        // Async save to storage
+        AsyncStorage.setItem(
+          STORAGE_KEYS.ENROLLMENTS,
+          JSON.stringify(updatedEnrollments)
+        ).catch((err) => console.error("Failed to save enrollments to storage", err));
+
+        return updatedEnrollments;
+      });
     } catch (error) {
-      console.error("Failed to save enrollments to storage", error);
+      console.error("Failed to enroll in course", error);
     }
   };
 

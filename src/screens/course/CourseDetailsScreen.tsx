@@ -3,7 +3,7 @@ import { colors } from "@/constants/colors";
 import { useLMS } from "@/hooks";
 import { Course } from "@/types";
 import { getCourseThumbnail } from "@/utils";
-import { Feather } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -62,11 +62,10 @@ export default function CourseDetailsScreen() {
           style={styles.bookmarkHeaderBtn}
           hitSlop={8}
         >
-          <Feather
-            name="bookmark"
+          <Ionicons
+            name={isBookmarked ? "bookmark" : "bookmark-outline"}
             size={22}
             color={isBookmarked ? colors.primary.default : colors.neutral[600]}
-            fill={isBookmarked ? colors.primary.default : "none"}
           />
         </Pressable>
       ),

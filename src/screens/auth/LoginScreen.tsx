@@ -1,4 +1,7 @@
-
+import { Button, InputField } from "@/components";
+import { useLoginForm } from "@/hooks";
+import { useRouter } from "expo-router";
+import { Controller } from "react-hook-form";
 import {
   Keyboard,
   KeyboardAvoidingView,
@@ -8,10 +11,6 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
-import { useRouter } from "expo-router";
-import { Controller } from "react-hook-form";
-import { Button, InputField } from "@/components";
-import { useLoginForm } from "@/hooks";
 import { styles } from "./LoginScreen.styles";
 
 export default function LoginScreen() {
@@ -109,4 +108,3 @@ export default function LoginScreen() {
     </KeyboardAvoidingView>
   );
 }
-

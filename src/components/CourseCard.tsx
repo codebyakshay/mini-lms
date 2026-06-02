@@ -1,7 +1,8 @@
 import { colors } from "@/constants/colors";
 import { Course } from "@/types";
 import { getCourseThumbnail } from "@/utils";
-import { Feather } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
+import { memo } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 
 interface CourseCardProps {
@@ -11,7 +12,7 @@ interface CourseCardProps {
   onToggleBookmark: (id: string) => void;
 }
 
-export default function CourseCard({
+function CourseCardComp({
   item,
   isBookmarked,
   onPress,
@@ -82,11 +83,10 @@ export default function CourseCard({
         ]}
         hitSlop={12}
       >
-        <Feather
-          name="bookmark"
+        <Ionicons
+          name={isBookmarked ? "bookmark" : "bookmark-outline"}
           size={18}
-          color={isBookmarked ? colors.primary.default : colors.neutral[400]}
-          fill={isBookmarked ? colors.primary.default : "none"}
+          color={isBookmarked ? colors.primary.default : colors.neutral[500]}
         />
       </Pressable>
     </View>
@@ -189,4 +189,15 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: colors.neutral[900],
   },
+});
+
+export default memo(CourseCardComp, (prevProps, nextProps) => {
+  return (
+    prevProps.isBookmarked === nextProps.isBookmarked &&
+    prevProps.item.id === nextProps.item.id &&
+    prevProps.item.title === nextProps.item.title &&
+    prevProps.item.thumbnail === nextProps.item.thumbnail &&
+    prevProps.item.price === nextProps.item.price &&
+    prevProps.item.category === nextProps.item.category
+  );
 });

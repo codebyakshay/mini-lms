@@ -25,11 +25,36 @@ api.interceptors.request.use(
   }
 );
 
-// Response Interceptor: Handle automatic token refresh on 401 errors
+// Response Interceptor: Handle automatic token refresh on 401 errors and request retries
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+
+    // Retry Logic: Handle transient network dropouts, request timeouts, or 5xx server errors
+    const isNetworkOrTimeout =
+      !error.response ||
+      error.code === "ECONNABORTED" ||
+      error.message?.toLowerCase().includes("timeout");
+    const is5xxError = error.response && error.response.status >= 500;
+    const isTimeoutStatus = error.response && error.response.status === 408;
+
+    if (
+      (isNetworkOrTimeout || is5xxError || isTimeoutStatus) &&
+      originalRequest &&
+      (!originalRequest._retryCount || originalRequest._retryCount < 3)
+    ) {
+      originalRequest._retryCount = (originalRequest._retryCount || 0) + 1;
+      
+      // Exponential backoff: 1s, 2s, 4s delay
+      const delayMs = Math.pow(2, originalRequest._retryCount - 1) * 1000;
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+
+      console.warn(
+        `API request failed: ${error.message}. Retrying ${originalRequest.url} (Attempt ${originalRequest._retryCount}/3) in ${delayMs}ms...`
+      );
+      return api(originalRequest);
+    }
 
     // Check if error is 401 Unauthorized and not already retried
     if (

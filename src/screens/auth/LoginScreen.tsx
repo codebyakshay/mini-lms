@@ -18,12 +18,14 @@ export default function LoginScreen() {
   const {
     control,
     handleSubmit,
-    errors,
+    formState: { errors },
     generalError,
-    clearGeneralError,
     isLoading,
     handleLogin,
   } = useLoginForm();
+
+  console.log("LoginScreen render - generalError:", generalError);
+  console.log("LoginScreen render - isLoading:", isLoading);
 
   return (
     <KeyboardAvoidingView
@@ -54,10 +56,7 @@ export default function LoginScreen() {
                 <InputField
                   label="Email or Username"
                   value={value}
-                  onChangeText={(text) => {
-                    onChange(text);
-                    clearGeneralError();
-                  }}
+                  onChangeText={onChange}
                   onBlur={onBlur}
                   placeholder="you@example.com or username"
                   autoCapitalize="none"
@@ -75,10 +74,7 @@ export default function LoginScreen() {
                 <InputField
                   label="Password"
                   value={value}
-                  onChangeText={(text) => {
-                    onChange(text);
-                    clearGeneralError();
-                  }}
+                  onChangeText={onChange}
                   onBlur={onBlur}
                   placeholder="••••••••"
                   isPassword

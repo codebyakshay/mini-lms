@@ -1,7 +1,7 @@
+import { RegisterFields, registerSchema } from "@/types";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { registerSchema, RegisterFields } from "@/types";
 import { useAuth } from "./useAuth";
 
 export function useRegisterForm() {
@@ -11,7 +11,8 @@ export function useRegisterForm() {
   const {
     control,
     handleSubmit,
-    formState: { errors },
+    formState,
+    setError,
   } = useForm<RegisterFields>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
@@ -26,9 +27,21 @@ export function useRegisterForm() {
     try {
       await register(data.username, data.email, data.password);
     } catch (err: any) {
-      setGeneralError(
-        err.message || "Failed to create account. Please try again."
-      );
+      const errMsg =
+        err.message || "Failed to create account. Please try again.";
+      if (errMsg.toLowerCase().includes("username")) {
+        setError("username", {
+          type: "manual",
+          message: errMsg,
+        });
+      } else if (errMsg.toLowerCase().includes("email")) {
+        setError("email", {
+          type: "manual",
+          message: errMsg,
+        });
+      } else {
+        setGeneralError(errMsg);
+      }
     }
   };
 
@@ -41,11 +54,10 @@ export function useRegisterForm() {
   return {
     control,
     handleSubmit,
-    errors,
+    formState,
     generalError,
     clearGeneralError,
     isLoading,
     handleRegister,
   };
 }
-

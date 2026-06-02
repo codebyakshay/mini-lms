@@ -18,7 +18,7 @@ export default function RegisterScreen() {
   const {
     control,
     handleSubmit,
-    errors,
+    formState: { errors },
     generalError,
     clearGeneralError,
     isLoading,

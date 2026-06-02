@@ -75,6 +75,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         password,
       });
 
+      console.log("Login response:", response.data);
+
       if (response.data && response.data.success) {
         const { accessToken, refreshToken, user } = response.data.data;
         await storage.setAccessToken(accessToken);
@@ -86,10 +88,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           isLoading: false,
         });
         router.replace("/(tabs)");
+      } else {
+        // API returned success: false
+        setState((s) => ({ ...s, isLoading: false }));
+        throw new Error(response.data?.message || "Login failed");
       }
     } catch (error: any) {
+      console.error("Login error details:", error);
       setState((s) => ({ ...s, isLoading: false }));
-      throw new Error(error.response?.data?.message || "Login failed");
+
+      // Extract error message from different possible error structures
+      let errorMessage = "Login failed";
+
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+
+      console.log("Final error message:", errorMessage);
+      throw new Error(errorMessage);
     }
   };
 

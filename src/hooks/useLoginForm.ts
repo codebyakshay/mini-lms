@@ -1,58 +1,50 @@
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { loginSchema, LoginFields } from "@/types";
 import { useAuth } from "./useAuth";
 
 export function useLoginForm() {
-  const [emailOrUsername, setEmailOrUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [errors, setErrors] = useState<{
-    email?: string;
-    password?: string;
-    general?: string;
-  }>({});
-
+  const [generalError, setGeneralError] = useState<string | null>(null);
   const { login, isLoading } = useAuth();
 
-  const validateForm = () => {
-    const newErrors: typeof errors = {};
-    if (!emailOrUsername.trim()) {
-      newErrors.email = "Email or Username is required";
-    }
-    if (!password) {
-      newErrors.password = "Password is required";
-    } else if (password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters";
-    }
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFields>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      emailOrUsername: "",
+      password: "",
+    },
+  });
 
-  const handleLogin = async () => {
-    if (!validateForm()) return;
-    setErrors({});
+  const handleLogin = async (data: LoginFields) => {
+    setGeneralError(null);
     try {
-      await login(emailOrUsername, password);
+      await login(data.emailOrUsername, data.password);
     } catch (err: any) {
-      setErrors({
-        general:
-          err.message || "Failed to log in. Please check your credentials.",
-      });
+      setGeneralError(
+        err.message || "Failed to log in. Please check your credentials."
+      );
     }
   };
 
-  const clearError = (field: "email" | "password" | "general") => {
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: undefined }));
+  const clearGeneralError = () => {
+    if (generalError) {
+      setGeneralError(null);
     }
   };
 
   return {
-    emailOrUsername,
-    setEmailOrUsername,
-    password,
-    setPassword,
+    control,
+    handleSubmit,
     errors,
+    generalError,
+    clearGeneralError,
     isLoading,
     handleLogin,
-    clearError,
   };
 }
+

@@ -9,6 +9,7 @@ import {
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { Controller } from "react-hook-form";
 import { Button, InputField } from "@/components";
 import { useLoginForm } from "@/hooks";
 import { styles } from "./LoginScreen.styles";
@@ -16,14 +17,13 @@ import { styles } from "./LoginScreen.styles";
 export default function LoginScreen() {
   const router = useRouter();
   const {
-    emailOrUsername,
-    setEmailOrUsername,
-    password,
-    setPassword,
+    control,
+    handleSubmit,
     errors,
+    generalError,
+    clearGeneralError,
     isLoading,
     handleLogin,
-    clearError,
   } = useLoginForm();
 
   return (
@@ -41,43 +41,57 @@ export default function LoginScreen() {
             </Text>
 
             {/* General Error */}
-            {errors.general && (
+            {generalError && (
               <View style={styles.errorBanner}>
-                <Text style={styles.errorBannerText}>{errors.general}</Text>
+                <Text style={styles.errorBannerText}>{generalError}</Text>
               </View>
             )}
 
             {/* Email / Username */}
-            <InputField
-              label="Email or Username"
-              value={emailOrUsername}
-              onChangeText={(val) => {
-                setEmailOrUsername(val);
-                clearError("email");
-              }}
-              placeholder="you@example.com or username"
-              autoCapitalize="none"
-              keyboardType="email-address"
-              error={errors.email}
+            <Controller
+              control={control}
+              name="emailOrUsername"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <InputField
+                  label="Email or Username"
+                  value={value}
+                  onChangeText={(text) => {
+                    onChange(text);
+                    clearGeneralError();
+                  }}
+                  onBlur={onBlur}
+                  placeholder="you@example.com or username"
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  error={errors.emailOrUsername?.message}
+                />
+              )}
             />
 
             {/* Password */}
-            <InputField
-              label="Password"
-              value={password}
-              onChangeText={(val) => {
-                setPassword(val);
-                clearError("password");
-              }}
-              placeholder="••••••••"
-              isPassword
-              error={errors.password}
+            <Controller
+              control={control}
+              name="password"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <InputField
+                  label="Password"
+                  value={value}
+                  onChangeText={(text) => {
+                    onChange(text);
+                    clearGeneralError();
+                  }}
+                  onBlur={onBlur}
+                  placeholder="••••••••"
+                  isPassword
+                  error={errors.password?.message}
+                />
+              )}
             />
 
             {/* Submit */}
             <Button
               title="Sign In"
-              onPress={handleLogin}
+              onPress={handleSubmit(handleLogin)}
               isLoading={isLoading}
               style={styles.submitButton}
             />
@@ -95,3 +109,4 @@ export default function LoginScreen() {
     </KeyboardAvoidingView>
   );
 }
+

@@ -1,70 +1,51 @@
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { registerSchema, RegisterFields } from "@/types";
 import { useAuth } from "./useAuth";
 
 export function useRegisterForm() {
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [errors, setErrors] = useState<{
-    username?: string;
-    email?: string;
-    password?: string;
-    general?: string;
-  }>({});
-
+  const [generalError, setGeneralError] = useState<string | null>(null);
   const { register, isLoading } = useAuth();
 
-  const validateForm = () => {
-    const newErrors: typeof errors = {};
-    if (!username.trim()) {
-      newErrors.username = "Username is required";
-    } else if (username.length < 3) {
-      newErrors.username = "Username must be at least 3 characters";
-    }
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<RegisterFields>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      username: "",
+      email: "",
+      password: "",
+    },
+  });
 
-    if (!email.trim()) {
-      newErrors.email = "Email is required";
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = "Please enter a valid email address";
-    }
-
-    if (!password) {
-      newErrors.password = "Password is required";
-    } else if (password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters";
-    }
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleRegister = async () => {
-    if (!validateForm()) return;
-    setErrors({});
+  const handleRegister = async (data: RegisterFields) => {
+    setGeneralError(null);
     try {
-      await register(username, email, password);
+      await register(data.username, data.email, data.password);
     } catch (err: any) {
-      setErrors({
-        general: err.message || "Failed to create account. Please try again.",
-      });
+      setGeneralError(
+        err.message || "Failed to create account. Please try again."
+      );
     }
   };
 
-  const clearError = (field: "username" | "email" | "password" | "general") => {
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: undefined }));
+  const clearGeneralError = () => {
+    if (generalError) {
+      setGeneralError(null);
     }
   };
 
   return {
-    username,
-    setUsername,
-    email,
-    setEmail,
-    password,
-    setPassword,
+    control,
+    handleSubmit,
     errors,
+    generalError,
+    clearGeneralError,
     isLoading,
     handleRegister,
-    clearError,
   };
 }
+

@@ -1,6 +1,7 @@
 import { Button, InputField } from "@/components";
 import { useRegisterForm } from "@/hooks";
 import { useRouter } from "expo-router";
+import { Controller } from "react-hook-form";
 import {
   Keyboard,
   KeyboardAvoidingView,
@@ -15,16 +16,13 @@ import { styles } from "./RegisterScreen.styles";
 export default function RegisterScreen() {
   const router = useRouter();
   const {
-    username,
-    setUsername,
-    email,
-    setEmail,
-    password,
-    setPassword,
+    control,
+    handleSubmit,
     errors,
+    generalError,
+    clearGeneralError,
     isLoading,
     handleRegister,
-    clearError,
   } = useRegisterForm();
 
   return (
@@ -40,56 +38,77 @@ export default function RegisterScreen() {
             <Text style={styles.subtitle}>Join Mini LMS to start learning</Text>
 
             {/* General Error */}
-            {errors.general && (
+            {generalError && (
               <View style={styles.errorBanner}>
-                <Text style={styles.errorBannerText}>{errors.general}</Text>
+                <Text style={styles.errorBannerText}>{generalError}</Text>
               </View>
             )}
 
             {/* Username */}
-            <InputField
-              label="Username"
-              value={username}
-              onChangeText={(val) => {
-                setUsername(val);
-                clearError("username");
-              }}
-              placeholder="johndoe"
-              autoCapitalize="none"
-              error={errors.username}
+            <Controller
+              control={control}
+              name="username"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <InputField
+                  label="Username"
+                  value={value}
+                  onChangeText={(text) => {
+                    onChange(text);
+                    clearGeneralError();
+                  }}
+                  onBlur={onBlur}
+                  placeholder="johndoe"
+                  autoCapitalize="none"
+                  error={errors.username?.message}
+                />
+              )}
             />
 
             {/* Email */}
-            <InputField
-              label="Email Address"
-              value={email}
-              onChangeText={(val) => {
-                setEmail(val);
-                clearError("email");
-              }}
-              placeholder="you@example.com"
-              autoCapitalize="none"
-              keyboardType="email-address"
-              error={errors.email}
+            <Controller
+              control={control}
+              name="email"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <InputField
+                  label="Email Address"
+                  value={value}
+                  onChangeText={(text) => {
+                    onChange(text);
+                    clearGeneralError();
+                  }}
+                  onBlur={onBlur}
+                  placeholder="you@example.com"
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  error={errors.email?.message}
+                />
+              )}
             />
 
             {/* Password */}
-            <InputField
-              label="Password"
-              value={password}
-              onChangeText={(val) => {
-                setPassword(val);
-                clearError("password");
-              }}
-              placeholder="••••••••"
-              isPassword
-              error={errors.password}
+            <Controller
+              control={control}
+              name="password"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <InputField
+                  label="Password"
+                  value={value}
+                  onChangeText={(text) => {
+                    onChange(text);
+                    clearGeneralError();
+                  }}
+                  onBlur={onBlur}
+                  placeholder="••••••••"
+                  isPassword
+                  error={errors.password?.message}
+                />
+              )}
             />
 
             {/* Submit */}
             <Button
               title="Sign Up"
-              onPress={handleRegister}
+              onPress={handleSubmit(handleRegister)}
               isLoading={isLoading}
               style={styles.submitButton}
             />
@@ -107,3 +126,4 @@ export default function RegisterScreen() {
     </KeyboardAvoidingView>
   );
 }
+

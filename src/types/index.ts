@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 export interface User {
   id: string;
   username: string;
@@ -64,3 +66,22 @@ export interface LMSAppState {
   isLoading: boolean;
   error: string | null;
 }
+
+export const loginSchema = z.object({
+  emailOrUsername: z.string().min(1, "Email or Username is required"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
+
+export type LoginFields = z.infer<typeof loginSchema>;
+
+export const registerSchema = z.object({
+  username: z
+    .string()
+    .min(3, "Username must be at least 3 characters")
+    .regex(/^[a-zA-Z0-9_]+$/, "Alphanumeric and underscores only"),
+  email: z.string().min(1, "Email is required").email("Please enter a valid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
+
+export type RegisterFields = z.infer<typeof registerSchema>;
+

@@ -197,6 +197,14 @@ _Note: The generated APK link will be printed in the console and available on yo
 
 ## 📸 Screenshots
 
-|   🏠 Catalog Feed & Offline Warning   |     📖 WebView Interactive Player      |    🔑 Premium Secure Authentication     |
-| :-----------------------------------: | :------------------------------------: | :-------------------------------------: |
-| _Elegant slide-down network warnings_ | _Handshake display & complete trigger_ | _Validation & Secure Store persistence_ |
+### 🔑 Authentication Flows
+
+|       🔐 Login Screen        |         📝 Register Screen         |
+| :--------------------------: | :--------------------------------: |
+| ![Login Screen](./login.png) | ![Register Screen](./register.png) |
+
+### 🏠 Course Catalog & Learning Vault
+
+|        📚 Course Catalog         |         🔖 My Bookmarks          |        👤 User Profile         |
+| :------------------------------: | :------------------------------: | :----------------------------: |
+| ![Course Catalog](./catelog.png) | ![My Bookmarks](./bookmarks.png) | ![User Profile](./profile.png) |

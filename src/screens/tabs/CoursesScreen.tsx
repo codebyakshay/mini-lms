@@ -5,6 +5,7 @@ import { Course } from "@/types";
 import { Feather } from "@expo/vector-icons";
 import { LegendList } from "@legendapp/list/react-native";
 import { useRouter } from "expo-router";
+import { useCallback } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
 import { styles } from "./CoursesScreen.styles";
 
@@ -22,9 +23,25 @@ export default function CoursesScreen() {
 
   const { bookmarks, toggleBookmark } = useLMS();
 
-  const handleCoursePress = (id: string) => {
-    router.push(`/course/${id}`);
-  };
+  const handleCoursePress = useCallback(
+    (id: string) => {
+      router.push(`/course/${id}`);
+    },
+    [router]
+  );
+
+  const renderItem = useCallback(
+    ({ item }: { item: Course }) => (
+      <CourseCard
+        key={item.id}
+        item={item}
+        isBookmarked={bookmarks.includes(item.id)}
+        onPress={handleCoursePress}
+        onToggleBookmark={toggleBookmark}
+      />
+    ),
+    [bookmarks, handleCoursePress, toggleBookmark]
+  );
 
   if (isLoading && !isRefreshing) {
     return (
@@ -97,14 +114,7 @@ export default function CoursesScreen() {
         <LegendList
           data={courses}
           extraData={bookmarks}
-          renderItem={({ item }) => (
-            <CourseCard
-              item={item}
-              isBookmarked={bookmarks.includes(item.id)}
-              onPress={handleCoursePress}
-              onToggleBookmark={toggleBookmark}
-            />
-          )}
+          renderItem={renderItem}
           keyExtractor={(item: Course) => item.id}
           contentContainerStyle={styles.listContent}
           estimatedItemSize={296}

@@ -2,8 +2,13 @@ import { colors } from "@/constants/colors";
 import { Course } from "@/types";
 import { getCourseThumbnail } from "@/utils";
 import { Ionicons } from "@expo/vector-icons";
-import { memo } from "react";
+import { memo, useState } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+
+const COURSE_CARD = {
+  THUMBNAIL_HEIGHT: 160,
+  CARD_PADDING: 16,
+} as const;
 
 interface CourseCardProps {
   item: Course;
@@ -18,6 +23,8 @@ function CourseCardComp({
   onPress,
   onToggleBookmark,
 }: CourseCardProps) {
+  const [thumbnailHeight, setThumbnailHeight] = useState<number>(COURSE_CARD.THUMBNAIL_HEIGHT);
+
   const instructorName = `${item.instructor?.name.first || ""} ${
     item.instructor?.name.last || ""
   }`.trim();
@@ -33,7 +40,8 @@ function CourseCardComp({
       >
         <Image
           source={{ uri: getCourseThumbnail(item) }}
-          style={styles.thumbnail}
+          style={[styles.thumbnail, { height: thumbnailHeight }]}
+          onLayout={(e) => setThumbnailHeight(e.nativeEvent.layout.height)}
           resizeMode="cover"
         />
         <View style={styles.cardContent}>
@@ -74,12 +82,12 @@ function CourseCardComp({
         </View>
       </Pressable>
 
-      {/* Bookmark Button - Positioned absolutely to prevent touch propagation issues */}
+      {/* Bookmark Button - Positioned dynamically based on thumbnail height */}
       <Pressable
         onPress={() => onToggleBookmark(item.id)}
-        style={({ pressed }) => [
+        style={[
           styles.bookmarkButtonAbsolute,
-          pressed && { opacity: 0.75 },
+          { top: thumbnailHeight + COURSE_CARD.CARD_PADDING },
         ]}
         hitSlop={12}
       >
@@ -115,7 +123,7 @@ const styles = StyleSheet.create({
   },
   thumbnail: {
     width: "100%",
-    height: 160,
+    height: COURSE_CARD.THUMBNAIL_HEIGHT,
     backgroundColor: colors.neutral[200],
   },
   cardContent: {
@@ -141,8 +149,7 @@ const styles = StyleSheet.create({
   },
   bookmarkButtonAbsolute: {
     position: "absolute",
-    top: 176,
-    right: 16,
+    right: COURSE_CARD.CARD_PADDING,
     padding: 6,
     borderRadius: 20,
     backgroundColor: colors.neutral[100],
@@ -191,13 +198,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default memo(CourseCardComp, (prevProps, nextProps) => {
-  return (
-    prevProps.isBookmarked === nextProps.isBookmarked &&
-    prevProps.item.id === nextProps.item.id &&
-    prevProps.item.title === nextProps.item.title &&
-    prevProps.item.thumbnail === nextProps.item.thumbnail &&
-    prevProps.item.price === nextProps.item.price &&
-    prevProps.item.category === nextProps.item.category
-  );
-});
+export default memo(CourseCardComp);

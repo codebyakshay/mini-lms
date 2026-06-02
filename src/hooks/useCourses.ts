@@ -1,13 +1,13 @@
 import { api } from "@/services/api";
 import { Course, Instructor } from "@/types";
+import { APIResponse, FreeAPIProduct, FreeAPIUser } from "@/types/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const CACHE_KEY = "@lms_courses_cache";
 
 export function useCourses() {
   const [courses, setCourses] = useState<Course[]>([]);
-  const [filteredCourses, setFilteredCourses] = useState<Course[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -24,44 +24,53 @@ export function useCourses() {
     try {
       // Fetch products (courses) and users (instructors) in parallel from FreeAPI
       const [productsRes, usersRes] = await Promise.all([
-        api.get("/public/randomproducts?page=1&limit=20"),
-        api.get("/public/randomusers?page=1&limit=20"),
+        api.get<APIResponse<FreeAPIProduct>>("/public/randomproducts?page=1&limit=20"),
+        api.get<APIResponse<FreeAPIUser>>("/public/randomusers?page=1&limit=20"),
       ]);
 
-      const productsData = productsRes.data?.data?.data || [];
-      const usersData = usersRes.data?.data?.data || [];
+      const productsData: FreeAPIProduct[] = productsRes.data?.data?.data || [];
+      const usersData: FreeAPIUser[] = usersRes.data?.data?.data || [];
 
-      // Combine by index modulo
-      const combined: Course[] = productsData.map(
-        (product: any, index: number) => {
-          const user = usersData[index % usersData.length];
+      // Validate both arrays have data
+      if (productsData.length === 0) {
+        setError("No courses available. Please try again later.");
+        return;
+      }
+      if (usersData.length === 0) {
+        setError("Unable to load instructor information. Please try again.");
+        return;
+      }
 
-          const instructor: Instructor = {
-            id: user?.id?.toString() || `instructor-${index}`,
-            name: {
-              title: user?.name?.title || "",
-              first: user?.name?.first || "Unknown",
-              last: user?.name?.last || "Instructor",
-            },
-            email: user?.email || "",
-            picture: {
-              large: user?.picture?.large || "",
-              medium: user?.picture?.medium || "",
-              thumbnail: user?.picture?.thumbnail || "",
-            },
-          };
+      // Pair by index modulo—ensures every product gets an instructor
+      // If fewer instructors than products, they cycle (e.g., 5 instructors, 20 products → repeats)
+      const combined: Course[] = productsData.map((product, index) => {
+        const user = usersData[index % usersData.length];
 
-          return {
-            id: product.id.toString(),
-            title: product.title || "Untitled Course",
-            description: product.description || "No description provided.",
-            thumbnail: product.thumbnail || "",
-            price: product.price || 0,
-            category: product.category || "General",
-            instructor,
-          };
-        },
-      );
+        const instructor: Instructor = {
+          id: user.id.toString(),
+          name: {
+            title: user.name.title || "",
+            first: user.name.first || "Unknown",
+            last: user.name.last || "Instructor",
+          },
+          email: user.email || "",
+          picture: {
+            large: user.picture.large || "",
+            medium: user.picture.medium || "",
+            thumbnail: user.picture.thumbnail || "",
+          },
+        };
+
+        return {
+          id: product.id.toString(),
+          title: product.title || "Untitled Course",
+          description: product.description || "No description provided.",
+          thumbnail: product.thumbnail || "",
+          price: product.price || 0,
+          category: product.category || "General",
+          instructor,
+        };
+      });
 
       setCourses(combined);
       // Cache results for offline support
@@ -89,14 +98,13 @@ export function useCourses() {
   }, []);
 
   // Filter courses based on search query matching
-  useEffect(() => {
+  const filteredCourses = useMemo(() => {
     if (!searchQuery.trim()) {
-      setFilteredCourses(courses);
-      return;
+      return courses;
     }
 
     const query = searchQuery.toLowerCase();
-    const filtered = courses.filter((course) => {
+    return courses.filter((course) => {
       const titleMatch = course.title?.toLowerCase().includes(query);
       const descMatch = course.description?.toLowerCase().includes(query);
       const firstName = course.instructor?.name?.first?.toLowerCase() || "";
@@ -106,8 +114,6 @@ export function useCourses() {
 
       return titleMatch || descMatch || instructorMatch;
     });
-
-    setFilteredCourses(filtered);
   }, [searchQuery, courses]);
 
   const handleRefresh = () => {
@@ -124,3 +130,4 @@ export function useCourses() {
     handleRefresh,
   };
 }
+

@@ -114,3 +114,65 @@ To authenticate content requests securely inside the embedded player, the app in
 1. Injects secure session parameters into the `headers` prop of the WebView request.
 2. Injects a global script payload via `injectedJavaScript` directly into the WebView's document memory pool to display interactive debug handshakes inside the mock player.
 3. Receives JSON message handlers over `onMessage` from the WebView to record progress milestones and pop the screen cleanly back to the native layer.
+
+---
+
+## 📡 Offline Functionality & Cache Strategy
+
+The application leverages a multi-layer offline strategy to guarantee uninterrupted learning:
+1. **Network State Monitoring:** Uses `@react-native-community/netinfo` to actively listen to cellular/Wi-Fi transitions.
+2. **Axios Retry Interceptor:** Handles transient dropouts and 5xx errors by automatically retrying failed requests up to 3 times with exponential backoff delays (`1s`, `2s`, `4s`).
+3. **AsyncStorage List Fallback:** Successful API responses are cached locally. If the user is completely offline or all request retries time out, the system transparently serves the cached catalog list.
+4. **Offline Warning Banner:** An elegant slide-down banner alerts the user that they are browsing cached details.
+
+---
+
+## ⚙️ Environment Variables & Configs
+
+The app handles settings directly at the API client interface:
+* **API_BASE_URL:** Configured in `src/services/api.ts`. Defaults to `https://api.freeapi.app/api/v1` for the production endpoint.
+* **Authentication Keys:** Tokens are dynamically retrieved from the device's hardware secure storage on start, requiring zero hardcoded credentials.
+
+---
+
+## 📦 APK Build & Store Submission Instructions
+
+We utilize **EAS CLI** (Expo Application Services) to generate production-ready binaries:
+
+### 1. Prerequisites
+Ensure EAS CLI is installed and your account is linked:
+```bash
+npm install -g eas-cli
+eas login
+```
+
+### 2. Build Development Build APK (for local testing)
+```bash
+eas build --platform android --profile development
+```
+
+### 3. Build Release/Preview APK (with bundled JS)
+Configure `eas.json` for preview builds (with `"buildType": "apk"` under the android profile), then run:
+```bash
+eas build --platform android --profile preview
+```
+*Note: The generated APK link will be printed in the console and available on your EAS Dashboard.*
+
+---
+
+## ⚠️ Known Issues & Limitations
+
+1. **Android Expo Go Local Notifications Restriction:**
+   Since Expo SDK 53/56, native local and push notification handlers are disabled by default inside the **Expo Go** application on Android, which can trigger system warnings or crashes. We resolved this by dynamically checking the runtime environment using `expo-constants` and conditionally loading `expo-notifications` via a `require` check, gracefully falling back to native `Alert.alert` milestones inside Expo Go Android.
+2. **Mock Web Player:**
+   The WebView lesson player simulates a video/interactive lesson layout using mock status updates and secure token handshakes since there is no active production video server attached to FreeAPI.
+3. **Styling Framework Selection (NativeWind/Tailwind vs StyleSheet API):**
+   Due to time constraints and version compatibility conflicts between NativeWind (v4/v5) and standard Expo SDK 56 modules in the development environment, we opted to use the native React Native **StyleSheet API** for all screens and components. This decision bypassed configuration blockers and ensured a highly consistent, premium dark-mode presentation with guaranteed 60 FPS rendering and native predictability.
+
+---
+
+## 📸 Screenshots
+
+| 🏠 Catalog Feed & Offline Warning | 📖 WebView Interactive Player | 🔑 Premium Secure Authentication |
+| :---: | :---: | :---: |
+| *Elegant slide-down network warnings* | *Handshake display & complete trigger* | *Validation & Secure Store persistence* |

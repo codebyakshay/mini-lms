@@ -1,7 +1,19 @@
 import { Stack } from "expo-router";
-import "../styles/global.css";
+import { AuthProvider } from "@/context/AuthContext";
+import { useAuth } from "@/hooks";
+import { ActivityIndicator, View } from "react-native";
 
-export default function RootLayout() {
+function RootLayoutNav() {
+  const { isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#f8fafc" }}>
+        <ActivityIndicator size="large" color="#6366f1" />
+      </View>
+    );
+  }
+
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
@@ -26,5 +38,13 @@ export default function RootLayout() {
         }}
       />
     </Stack>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <AuthProvider>
+      <RootLayoutNav />
+    </AuthProvider>
   );
 }

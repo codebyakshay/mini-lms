@@ -4,6 +4,22 @@ A performance-optimized, production-ready Mini LMS Mobile Application built usin
 
 ---
 
+## 📸 Screenshots
+
+### 🔑 Authentication Flows
+
+|       🔐 Login Screen        |         📝 Register Screen         |
+| :--------------------------: | :--------------------------------: |
+| ![Login Screen](./login.png) | ![Register Screen](./register.png) |
+
+### 🏠 Course Catalog & Tab Screens
+
+|        📚 Course Catalog         |         🔖 My Bookmarks          |        👤 User Profile         |
+| :------------------------------: | :------------------------------: | :----------------------------: |
+| ![Course Catalog](./catelog.png) | ![My Bookmarks](./bookmarks.png) | ![User Profile](./profile.png) |
+
+---
+
 ## 🚀 Key Features
 
 ### 1. Secure Authentication & User Management (Part 1)
@@ -192,19 +208,3 @@ _Note: The generated APK link will be printed in the console and available on yo
    The WebView lesson player simulates a video/interactive lesson layout using mock status updates and secure token handshakes since there is no active production video server attached to FreeAPI.
 3. **Styling Framework Selection (NativeWind/Tailwind vs StyleSheet API):**
    Due to time constraints and version compatibility conflicts between NativeWind (v4/v5) and standard Expo SDK 56 modules in the development environment, I opted to use the native React Native **StyleSheet API** for all screens and components. This decision bypassed configuration blockers and ensured a highly consistent, premium dark-mode presentation with guaranteed 60 FPS rendering and native predictability.
-
----
-
-## 📸 Screenshots
-
-### 🔑 Authentication Flows
-
-|       🔐 Login Screen        |         📝 Register Screen         |
-| :--------------------------: | :--------------------------------: |
-| ![Login Screen](./login.png) | ![Register Screen](./register.png) |
-
-### 🏠 Course Catalog & Learning Vault
-
-|        📚 Course Catalog         |         🔖 My Bookmarks          |        👤 User Profile         |
-| :------------------------------: | :------------------------------: | :----------------------------: |
-| ![Course Catalog](./catelog.png) | ![My Bookmarks](./bookmarks.png) | ![User Profile](./profile.png) |

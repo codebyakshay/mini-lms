@@ -156,8 +156,6 @@ export const notificationService = {
           repeats: false,
         },
       });
-
-      console.log("Postponed 24-hour idle reminder successfully.");
     } catch (error) {
       console.warn("Failed to reset idle reminder notification:", error);
     }

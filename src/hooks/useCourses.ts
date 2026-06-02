@@ -1,8 +1,9 @@
 import { api } from "@/services/api";
 import { Course, Instructor } from "@/types";
-import { APIResponse, FreeAPIProduct, FreeAPIUser } from "@/types/api";
+import { APIResponse, FreeAPIProduct, FreeAPIProductSchema, FreeAPIUser, FreeAPIUserSchema } from "@/types/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useMemo, useState } from "react";
+import { ZodError } from "zod";
 
 const CACHE_KEY = "@lms_courses_cache";
 
@@ -41,10 +42,33 @@ export function useCourses() {
         return;
       }
 
+      // Validate API response schemas at runtime
+      const validatedProducts = productsData.map((product) => {
+        try {
+          return FreeAPIProductSchema.parse(product);
+        } catch (err) {
+          if (err instanceof ZodError) {
+            throw new Error(`Invalid product format: ${err.issues[0]?.message}`);
+          }
+          throw err;
+        }
+      });
+
+      const validatedUsers = usersData.map((user) => {
+        try {
+          return FreeAPIUserSchema.parse(user);
+        } catch (err) {
+          if (err instanceof ZodError) {
+            throw new Error(`Invalid user format: ${err.issues[0]?.message}`);
+          }
+          throw err;
+        }
+      });
+
       // Pair by index modulo—ensures every product gets an instructor
       // If fewer instructors than products, they cycle (e.g., 5 instructors, 20 products → repeats)
-      const combined: Course[] = productsData.map((product, index) => {
-        const user = usersData[index % usersData.length];
+      const combined: Course[] = validatedProducts.map((product, index) => {
+        const user = validatedUsers[index % validatedUsers.length];
 
         const instructor: Instructor = {
           id: user.id.toString(),
@@ -75,15 +99,21 @@ export function useCourses() {
       setCourses(combined);
       // Cache results for offline support
       await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(combined));
-    } catch (err: any) {
-      console.error("Failed to fetch courses from FreeAPI", err);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error("Failed to fetch courses from FreeAPI", message);
       // Hydrate from local cache when offline
       const cached = await AsyncStorage.getItem(CACHE_KEY);
       if (cached) {
-        setCourses(JSON.parse(cached));
+        try {
+          setCourses(JSON.parse(cached));
+        } catch (parseErr) {
+          console.error("Failed to parse cached courses", parseErr);
+          setError("Failed to load courses. Please check your internet connection.");
+        }
       } else {
         setError(
-          err.message ||
+          message ||
             "Failed to load courses. Please check your internet connection.",
         );
       }
@@ -105,8 +135,8 @@ export function useCourses() {
 
     const query = searchQuery.toLowerCase();
     return courses.filter((course) => {
-      const titleMatch = course.title?.toLowerCase().includes(query);
-      const descMatch = course.description?.toLowerCase().includes(query);
+      const titleMatch = course.title?.toLowerCase().includes(query) ?? false;
+      const descMatch = course.description?.toLowerCase().includes(query) ?? false;
       const firstName = course.instructor?.name?.first?.toLowerCase() || "";
       const lastName = course.instructor?.name?.last?.toLowerCase() || "";
       const instructorMatch =

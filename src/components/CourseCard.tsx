@@ -2,8 +2,8 @@ import { colors } from "@/constants/colors";
 import { Course } from "@/types";
 import { getCourseThumbnail } from "@/utils";
 import { Ionicons } from "@expo/vector-icons";
-import { memo, useState } from "react";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { memo, useCallback, useState } from "react";
+import { Image, LayoutChangeEvent, Pressable, StyleSheet, Text, View } from "react-native";
 
 const COURSE_CARD = {
   THUMBNAIL_HEIGHT: 160,
@@ -29,6 +29,20 @@ function CourseCardComp({
     item.instructor?.name.last || ""
   }`.trim();
 
+  const formattedPrice = Number.isFinite(item.price) && item.price >= 0
+    ? `$${item.price.toFixed(2)}`
+    : "Price unavailable";
+
+  const handleLayout = useCallback((e: LayoutChangeEvent) => {
+    const newHeight = e.nativeEvent.layout.height;
+    setThumbnailHeight((prev) => {
+      if (prev !== newHeight) {
+        return newHeight;
+      }
+      return prev;
+    });
+  }, []);
+
   return (
     <View style={styles.card}>
       <Pressable
@@ -41,7 +55,7 @@ function CourseCardComp({
         <Image
           source={{ uri: getCourseThumbnail(item) }}
           style={[styles.thumbnail, { height: thumbnailHeight }]}
-          onLayout={(e) => setThumbnailHeight(e.nativeEvent.layout.height)}
+          onLayout={handleLayout}
           resizeMode="cover"
         />
         <View style={styles.cardContent}>
@@ -71,13 +85,17 @@ function CourseCardComp({
                   style={styles.instructorAvatar}
                 />
               ) : (
-                <View style={styles.instructorAvatar} />
+                <View style={[styles.instructorAvatar, styles.instructorAvatarPlaceholder]}>
+                  <Text style={styles.instructorInitials}>
+                    {item.instructor?.name.first?.[0]}{item.instructor?.name.last?.[0]}
+                  </Text>
+                </View>
               )}
               <Text style={styles.instructorName} numberOfLines={1}>
                 {instructorName || "Instructor"}
               </Text>
             </View>
-            <Text style={styles.price}>${item.price}</Text>
+            <Text style={styles.price}>{formattedPrice}</Text>
           </View>
         </View>
       </Pressable>
@@ -185,6 +203,15 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     backgroundColor: colors.neutral[200],
     marginRight: 8,
+  },
+  instructorAvatarPlaceholder: {
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  instructorInitials: {
+    fontSize: 10,
+    fontWeight: "600",
+    color: colors.neutral[600],
   },
   instructorName: {
     fontSize: 13,

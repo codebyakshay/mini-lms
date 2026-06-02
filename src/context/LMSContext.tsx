@@ -28,6 +28,8 @@ export const LMSProvider = ({ children }: { children: ReactNode }) => {
 
   // Load persisted state on startup
   useEffect(() => {
+    let isMounted = true;
+
     const loadPersistedData = async () => {
       try {
         const [storedBookmarks, storedEnrollments] = await Promise.all([
@@ -35,77 +37,122 @@ export const LMSProvider = ({ children }: { children: ReactNode }) => {
           AsyncStorage.getItem(STORAGE_KEYS.ENROLLMENTS),
         ]);
 
-        if (storedBookmarks) {
-          setBookmarks(JSON.parse(storedBookmarks));
+        if (storedBookmarks && isMounted) {
+          try {
+            const parsed = JSON.parse(storedBookmarks);
+            if (Array.isArray(parsed) && parsed.every((id) => typeof id === "string")) {
+              setBookmarks(parsed);
+            } else {
+              console.warn("Invalid bookmarks format, clearing");
+              await AsyncStorage.removeItem(STORAGE_KEYS.BOOKMARKS);
+            }
+          } catch (parseErr) {
+            console.error("Corrupted bookmarks data, clearing", parseErr);
+            await AsyncStorage.removeItem(STORAGE_KEYS.BOOKMARKS);
+          }
         }
-        if (storedEnrollments) {
-          setEnrollments(JSON.parse(storedEnrollments));
+
+        if (storedEnrollments && isMounted) {
+          try {
+            const parsed = JSON.parse(storedEnrollments);
+            if (Array.isArray(parsed) && parsed.every((id) => typeof id === "string")) {
+              setEnrollments(parsed);
+            } else {
+              console.warn("Invalid enrollments format, clearing");
+              await AsyncStorage.removeItem(STORAGE_KEYS.ENROLLMENTS);
+            }
+          } catch (parseErr) {
+            console.error("Corrupted enrollments data, clearing", parseErr);
+            await AsyncStorage.removeItem(STORAGE_KEYS.ENROLLMENTS);
+          }
         }
       } catch (error) {
-        console.error("Failed to load LMS data from AsyncStorage", error);
+        if (isMounted) {
+          console.error("Failed to load LMS data from AsyncStorage", error);
+        }
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     loadPersistedData();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const toggleBookmark = async (courseId: string) => {
+    let previousBookmarks: string[] = [];
+
     try {
-      // Use functional updater to avoid closure issues
-      setBookmarks((previousBookmarks) => {
-        const isBookmarking = !previousBookmarks.includes(courseId);
+      setBookmarks((currentBookmarks) => {
+        previousBookmarks = currentBookmarks;
+        const isBookmarking = !currentBookmarks.includes(courseId);
         const updatedBookmarks = isBookmarking
-          ? [...previousBookmarks, courseId]
-          : previousBookmarks.filter((id) => id !== courseId);
+          ? [...currentBookmarks, courseId]
+          : currentBookmarks.filter((id) => id !== courseId);
 
-        // Persist to storage (don't await here, just fire it)
-        AsyncStorage.setItem(
-          STORAGE_KEYS.BOOKMARKS,
-          JSON.stringify(updatedBookmarks)
-        ).catch((err) => console.error("Failed to save bookmarks", err));
+        // Persist to storage asynchronously with proper error handling
+        (async () => {
+          try {
+            await AsyncStorage.setItem(
+              STORAGE_KEYS.BOOKMARKS,
+              JSON.stringify(updatedBookmarks)
+            );
 
-        // Trigger notification after successful persist
-        if (isBookmarking && updatedBookmarks.length === 5) {
-          notificationService.showMilestoneNotification().catch((err) =>
-            console.error("Failed to trigger milestone notification", err)
-          );
-        }
+            if (isBookmarking && updatedBookmarks.length === 5) {
+              await notificationService.showMilestoneNotification().catch((err) =>
+                console.error("Failed to trigger milestone notification", err)
+              );
+            }
+          } catch (err) {
+            console.error("Failed to save bookmarks, rolling back", err);
+            setBookmarks(previousBookmarks);
+            Alert.alert("Error", "Failed to save bookmark. Your changes were not saved.");
+          }
+        })();
 
         return updatedBookmarks;
       });
     } catch (error) {
-      console.error("Failed to toggle bookmark", error);
-      Alert.alert(
-        "Error",
-        "Failed to update bookmark. Please try again."
-      );
+      console.error("Unexpected error in toggleBookmark", error);
     }
   };
 
   const enrollInCourse = async (courseId: string) => {
+    let previousEnrollments: string[] = [];
+
     try {
-      // Use functional updater to avoid closure issues
-      setEnrollments((previousEnrollments) => {
-        if (previousEnrollments.includes(courseId)) return previousEnrollments;
+      setEnrollments((currentEnrollments) => {
+        previousEnrollments = currentEnrollments;
 
-        const updatedEnrollments = [...previousEnrollments, courseId];
+        if (currentEnrollments.includes(courseId)) {
+          return currentEnrollments;
+        }
 
-        // Persist to storage (don't await here, just fire it)
-        AsyncStorage.setItem(
-          STORAGE_KEYS.ENROLLMENTS,
-          JSON.stringify(updatedEnrollments)
-        ).catch((err) => console.error("Failed to save enrollments", err));
+        const updatedEnrollments = [...currentEnrollments, courseId];
+
+        // Persist to storage asynchronously with proper error handling
+        (async () => {
+          try {
+            await AsyncStorage.setItem(
+              STORAGE_KEYS.ENROLLMENTS,
+              JSON.stringify(updatedEnrollments)
+            );
+          } catch (err) {
+            console.error("Failed to save enrollments, rolling back", err);
+            setEnrollments(previousEnrollments);
+            Alert.alert("Error", "Failed to enroll in course. Your changes were not saved.");
+          }
+        })();
 
         return updatedEnrollments;
       });
     } catch (error) {
-      console.error("Failed to enroll in course", error);
-      Alert.alert(
-        "Error",
-        "Failed to enroll in course. Please try again."
-      );
+      console.error("Unexpected error in enrollInCourse", error);
     }
   };
 
@@ -123,7 +170,7 @@ export const LMSProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Mock progress calculation: 25% progress per enrolled course (capped at 100%)
-  const progress = Math.min(enrollments.length * 25, 100);
+  const progress = Math.min(new Set(enrollments).size * 25, 100);
 
   return (
     <LMSContext.Provider

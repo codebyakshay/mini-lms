@@ -24,9 +24,6 @@ export default function LoginScreen() {
     handleLogin,
   } = useLoginForm();
 
-  console.log("LoginScreen render - generalError:", generalError);
-  console.log("LoginScreen render - isLoading:", isLoading);
-
   return (
     <KeyboardAvoidingView
       style={styles.container}

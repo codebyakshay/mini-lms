@@ -13,7 +13,7 @@ import {
 } from "react-native";
 
 function RootLayoutNav() {
-  const { isLoading } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -61,7 +61,8 @@ function RootLayoutNav() {
     };
   }, []);
 
-  if (isLoading) {
+  // Only show spinner on initial session restore, not during login/logout requests
+  if (isLoading && !isAuthenticated) {
     return (
       <View
         style={{

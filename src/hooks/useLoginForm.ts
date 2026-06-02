@@ -5,8 +5,9 @@ import { useForm } from "react-hook-form";
 import { useAuth } from "./useAuth";
 
 export function useLoginForm() {
-  const [generalError, setGeneralErrorState] = useState<string | null>(null);
-  const { login, isLoading } = useAuth();
+  const [generalError, setGeneralError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { login } = useAuth();
 
   const { control, handleSubmit, formState, clearErrors } = useForm<LoginFields>({
     resolver: zodResolver(loginSchema),
@@ -16,36 +17,19 @@ export function useLoginForm() {
     },
   });
 
-  const setGeneralError = (error: string | null) => {
-    console.log("setGeneralError called with:", error);
-    setGeneralErrorState(error);
-    console.log("setGeneralError state update queued");
-  };
-
   const handleLogin = async (data: LoginFields) => {
-    console.log("handleLogin called with:", data.emailOrUsername);
     setGeneralError(null);
     clearErrors();
+    setIsSubmitting(true);
 
     try {
-      console.log("Attempting login with:", data.emailOrUsername);
       await login(data.emailOrUsername, data.password);
-      console.log("Login succeeded!");
     } catch (err: any) {
-      console.error("Login error caught in handleLogin:", err);
       const errMsg =
         err?.message || "Failed to log in. Please check your credentials.";
-
-      console.log("About to set error message:", errMsg);
       setGeneralError(errMsg);
-      console.log("Error message set, waiting for re-render");
-    }
-  };
-
-  const clearGeneralError = () => {
-    console.log("clearGeneralError called");
-    if (generalError) {
-      setGeneralError(null);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -54,8 +38,7 @@ export function useLoginForm() {
     handleSubmit,
     formState,
     generalError,
-    clearGeneralError,
-    isLoading,
+    isLoading: isSubmitting,
     handleLogin,
   };
 }

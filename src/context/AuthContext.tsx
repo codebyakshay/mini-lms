@@ -1,13 +1,24 @@
-import { ReactNode, createContext, useContext, useEffect, useState } from "react";
 import { api } from "@/services/api";
-import { storage } from "@/utils/storage";
 import { AuthState } from "@/types";
+import { storage } from "@/utils/storage";
 import { useRouter } from "expo-router";
+import {
+  ReactNode,
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 
 interface AuthContextType extends AuthState {
   login: (emailOrUsername: string, password: string) => Promise<void>;
-  register: (username: string, email: string, password: string) => Promise<void>;
+  register: (
+    username: string,
+    email: string,
+    password: string,
+  ) => Promise<void>;
   logout: () => Promise<void>;
+  updateAvatar: (imageUri: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -82,7 +93,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const register = async (username: string, email: string, password: string) => {
+  const register = async (
+    username: string,
+    email: string,
+    password: string,
+  ) => {
     setState((s) => ({ ...s, isLoading: true }));
     try {
       const response = await api.post("/users/register", {
@@ -121,8 +136,46 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const updateAvatar = async (imageUri: string) => {
+    setState((s) => ({ ...s, isLoading: true }));
+    try {
+      const formData = new FormData();
+      const filename = imageUri.split("/").pop() || "avatar.jpg";
+      const match = /\.(\w+)$/.exec(filename);
+      const type = match ? `image/${match[1]}` : `image/jpeg`;
+
+      formData.append("avatar", {
+        uri: imageUri,
+        name: filename,
+        type: type,
+      } as any);
+
+      const response = await api.patch("/users/avatar", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      if (response.data && response.data.success) {
+        const updatedUser = response.data.data;
+        setState((s) => ({
+          ...s,
+          user: updatedUser,
+          isLoading: false,
+        }));
+      }
+    } catch (error: any) {
+      setState((s) => ({ ...s, isLoading: false }));
+      throw new Error(
+        error.response?.data?.message || "Failed to update avatar",
+      );
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ ...state, login, register, logout }}>
+    <AuthContext.Provider
+      value={{ ...state, login, register, logout, updateAvatar }}
+    >
       {children}
     </AuthContext.Provider>
   );

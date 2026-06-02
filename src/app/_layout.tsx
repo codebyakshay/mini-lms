@@ -1,5 +1,6 @@
 import { Stack } from "expo-router";
 import { AuthProvider } from "@/context/AuthContext";
+import { LMSProvider } from "@/context/LMSContext";
 import { useAuth } from "@/hooks";
 import { ActivityIndicator, View } from "react-native";
 
@@ -44,7 +45,10 @@ function RootLayoutNav() {
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <RootLayoutNav />
+      <LMSProvider>
+        <RootLayoutNav />
+      </LMSProvider>
     </AuthProvider>
   );
 }
+

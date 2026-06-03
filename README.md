@@ -3,7 +3,8 @@
 A performance-optimized, production-ready Mini LMS Mobile Application built using **React Native Expo (SDK 56)**, featuring secure authentication, offline-first course catalog rendering, an embedded interactive WebView lesson content viewer, and intelligent local notifications.
 
 ### 📲 Download Signed Production APK
-🚀 **[Download the Signed APK (Google Drive)](https://drive.google.com/file/d/1hMJ1lbrh9yB01VkdgK9OfJ8MrkkNG56x/view?usp=sharing)** — *Install directly on any Android device or emulator to test the completed application.*
+
+🚀 **[Download the Signed APK (Google Drive)](https://drive.google.com/file/d/1hMJ1lbrh9yB01VkdgK9OfJ8MrkkNG56x/view?usp=sharing)** — _Install directly on any Android device or emulator to test the completed application._
 
 ---
 

@@ -1,3 +1,5 @@
+import { ENDPOINTS } from "@/constants/endpoints";
+import { isNetworkOrTimeoutError, isServerError, getRetryDelay } from "@/utils/apiHelpers";
 import { storage } from "@/utils/storage";
 import axios from "axios";
 
@@ -32,22 +34,17 @@ api.interceptors.response.use(
     const originalRequest = error.config;
 
     // Retry Logic: Handle transient network dropouts, request timeouts, or 5xx server errors
-    const isNetworkOrTimeout =
-      !error.response ||
-      error.code === "ECONNABORTED" ||
-      error.message?.toLowerCase().includes("timeout");
-    const is5xxError = error.response && error.response.status >= 500;
-    const isTimeoutStatus = error.response && error.response.status === 408;
+    const shouldRetry = isNetworkOrTimeoutError(error) || isServerError(error);
 
     if (
-      (isNetworkOrTimeout || is5xxError || isTimeoutStatus) &&
+      shouldRetry &&
       originalRequest &&
       (!originalRequest._retryCount || originalRequest._retryCount < 3)
     ) {
       originalRequest._retryCount = (originalRequest._retryCount || 0) + 1;
 
-      // Exponential backoff: 1s, 2s, 4s delay
-      const delayMs = Math.pow(2, originalRequest._retryCount - 1) * 1000;
+      // Exponential backoff
+      const delayMs = getRetryDelay(originalRequest._retryCount);
       await new Promise((resolve) => setTimeout(resolve, delayMs));
 
       console.warn(
@@ -59,8 +56,8 @@ api.interceptors.response.use(
     // Check if error is 401 Unauthorized and not already retried
     // Do NOT attempt token refresh on login or register requests
     const isAuthRequest =
-      originalRequest?.url?.includes("/users/login") ||
-      originalRequest?.url?.includes("/users/register");
+      originalRequest?.url?.includes(ENDPOINTS.AUTH.LOGIN) ||
+      originalRequest?.url?.includes(ENDPOINTS.AUTH.REGISTER);
 
     if (
       error.response &&
@@ -78,9 +75,8 @@ api.interceptors.response.use(
         }
 
         // Hit the refresh token endpoint
-        // In apihub, the refresh token can be passed in the body or as a Bearer token
         const response = await axios.post(
-          `${API_BASE_URL}/users/refresh-token`,
+          `${API_BASE_URL}${ENDPOINTS.AUTH.REFRESH_TOKEN}`,
           { refreshToken },
           {
             headers: {

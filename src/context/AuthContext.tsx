@@ -1,4 +1,4 @@
-import { api } from "@/services/api";
+import { authService } from "@/services/authService";
 import { AuthState } from "@/types";
 import { storage } from "@/utils/storage";
 import { useRouter } from "expo-router";
@@ -39,7 +39,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const accessToken = await storage.getAccessToken();
         if (accessToken) {
           // Verify token and fetch current user profile
-          const response = await api.get("/users/current-user");
+          const response = await authService.getCurrentUser();
           if (response.data && response.data.success) {
             setState({
               token: accessToken,
@@ -69,7 +69,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         ? { email: emailOrUsername }
         : { username: emailOrUsername };
 
-      const response = await api.post("/users/login", {
+      const response = await authService.login({
         ...payload,
         password,
       });
@@ -106,7 +106,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   ) => {
     setState((s) => ({ ...s, isLoading: true }));
     try {
-      const response = await api.post("/users/register", {
+      const response = await authService.register({
         username,
         email,
         password,
@@ -127,7 +127,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = async () => {
     setState((s) => ({ ...s, isLoading: true }));
     try {
-      await api.post("/users/logout");
+      await authService.logout();
     } catch (error) {
       // Ignore API logout failures and clear locally
     } finally {
@@ -156,11 +156,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         type: type,
       } as any);
 
-      const response = await api.patch("/users/avatar", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
+      const response = await authService.updateAvatar(formData);
 
       if (response.data && response.data.success) {
         const updatedUser = response.data.data;

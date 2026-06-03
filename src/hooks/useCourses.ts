@@ -1,6 +1,6 @@
-import { api } from "@/services/api";
+import { courseService } from "@/services/courseService";
 import { Course, Instructor } from "@/types";
-import { APIResponse, FreeAPIProduct, FreeAPIProductSchema, FreeAPIUser, FreeAPIUserSchema } from "@/types/api";
+import { FreeAPIProduct, FreeAPIProductSchema, FreeAPIUser, FreeAPIUserSchema } from "@/types/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useMemo, useState } from "react";
 import { ZodError } from "zod";
@@ -15,6 +15,7 @@ export function useCourses() {
   const [error, setError] = useState<string | null>(null);
 
   const fetchCoursesAndInstructors = async (showRefreshIndicator = false) => {
+    await Promise.resolve(); // Defer execution to make state updates asynchronous
     if (showRefreshIndicator) {
       setIsRefreshing(true);
     } else {
@@ -25,8 +26,8 @@ export function useCourses() {
     try {
       // Fetch products (courses) and users (instructors) in parallel from FreeAPI
       const [productsRes, usersRes] = await Promise.all([
-        api.get<APIResponse<FreeAPIProduct>>("/public/randomproducts?page=1&limit=20"),
-        api.get<APIResponse<FreeAPIUser>>("/public/randomusers?page=1&limit=20"),
+        courseService.fetchCourses(20),
+        courseService.fetchInstructors(20),
       ]);
 
       const productsData: FreeAPIProduct[] = productsRes.data?.data?.data || [];
@@ -124,7 +125,10 @@ export function useCourses() {
   };
 
   useEffect(() => {
-    fetchCoursesAndInstructors();
+    const timer = setTimeout(() => {
+      fetchCoursesAndInstructors();
+    }, 0);
+    return () => clearTimeout(timer);
   }, []);
 
   // Filter courses based on search query matching
